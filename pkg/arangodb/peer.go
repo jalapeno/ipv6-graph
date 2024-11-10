@@ -111,7 +111,7 @@ func (a *arangoDB) processEgressPeer(ctx context.Context, key string, p *message
 		glog.Errorf("processEdge failed to create Edge object with error: %+v", err)
 		return err
 	}
-	//glog.V(9).Infof("processEdge completed processing lslink: %s for ls nodes: %s - %s", l.ID, ln.ID, rn.ID)
+	glog.Infof("processEdge completed processing eBGP peer: %s for ls node: %s - %s", p.ID, ln.ID, rn.ID)
 	return nil
 }
 
@@ -120,10 +120,10 @@ func (a *arangoDB) getLocalnode(ctx context.Context, e *message.PeerStateChange,
 	query := "FOR d IN " + a.lsnodeExt.Name()
 	if local {
 		glog.Infof("get local node per session: %s, %s", e.LocalBGPID, e.ID)
-		query += " filter d.router_id == " + "\"" + e.LocalBGPID + "\""
+		query += " filter d.bgp_router_id == " + "\"" + e.LocalBGPID + "\""
 	} else {
 		glog.Infof("get remote node per session: %s, %v", e.RemoteBGPID, e.ID)
-		query += " filter d.router_id == " + "\"" + e.RemoteBGPID + "\""
+		query += " filter d.bgp_router_id == " + "\"" + e.RemoteBGPID + "\""
 	}
 	query += " return d"
 	//glog.Infof("query: %+v", query)
