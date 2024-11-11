@@ -28,16 +28,15 @@ const (
 )
 
 var (
-	msgSrvAddr string
-	dbSrvAddr  string
-	dbName     string
-	dbUser     string
-	dbPass     string
-	lslink     string
-	lsprefix   string
-	lsnodeExt  string
-	ebgpPeer   string
-	// ebgpSessionCollection  string
+	msgSrvAddr   string
+	dbSrvAddr    string
+	dbName       string
+	dbUser       string
+	dbPass       string
+	lslink       string
+	lsprefix     string
+	lsnodeExt    string
+	ebgpPeer     string
 	inetPrefixV6 string
 	lsv6Graph    string
 	ipv6Graph    string

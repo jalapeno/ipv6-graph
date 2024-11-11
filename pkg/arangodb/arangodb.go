@@ -206,9 +206,9 @@ func (a *arangoDB) loadEdge() error {
 	}
 
 	// ASBRs between IGP domains
-	asbr_query := "for l in peer let internal_asns = ( for n in ls_node return n.peer_asn ) " +
+	asbr_query := "for l in peer let internal_asns = ( for n in ls_node_extended return n.peer_asn ) " +
 		"filter l.remote_asn in internal_asns && l.local_asn in internal_asns " +
-		"filter l._key !like " + "\"%:%\"" + " filter l.remote_asn != l.local_asn return l"
+		"filter l._key like " + "\"%:%\"" + " filter l.remote_asn != l.local_asn return l"
 	cursor, err = a.db.Query(ctx, asbr_query, nil)
 	if err != nil {
 		return err
@@ -229,9 +229,9 @@ func (a *arangoDB) loadEdge() error {
 		}
 	}
 
-	// egress / Inet peer
-	bgp_query := "for l in peer let internal_asns = ( for n in ls_node return n.peer_asn ) " +
-		"filter l.remote_asn not in internal_asns return l"
+	// Find eBGP egress / Inet peers. This could also be egress from IGP domain to internal eBGP peers
+	bgp_query := "for l in peer let internal_asns = ( for n in ls_node_extended return n.peer_asn ) " +
+		"filter l.remote_asn not in internal_asns filter l._key like " + "\"%:%\"" + " return l"
 	cursor, err = a.db.Query(ctx, bgp_query, nil)
 	if err != nil {
 		return err
@@ -296,7 +296,7 @@ func (a *arangoDB) loadEdge() error {
 
 	// ebgp DC peers
 	//peer2peer_query := "for l in peer return l"
-	peer2peer_query := "for l in peer let internal_asns = ( for n in ls_node return n.peer_asn ) " +
+	peer2peer_query := "for l in peer let internal_asns = ( for n in ls_node_extended return n.peer_asn ) " +
 		"filter l.remote_asn not in internal_asns filter l.remote_asn in 64512..65535 filter l._key !like " + "\"%:%\"" +
 		" return l"
 	cursor, err = a.db.Query(ctx, peer2peer_query, nil)
