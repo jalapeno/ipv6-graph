@@ -9,9 +9,9 @@ import (
 	"runtime"
 
 	"github.com/golang/glog"
-	"github.com/jalapeno/ebgp-graph/pkg/arangodb"
-	"github.com/jalapeno/ebgp-graph/pkg/kafkamessenger"
-	"github.com/jalapeno/ebgp-graph/pkg/kafkanotifier"
+	"github.com/jalapeno/bgpv6-graph/pkg/arangodb"
+	"github.com/jalapeno/bgpv6-graph/pkg/kafkamessenger"
+	"github.com/jalapeno/bgpv6-graph/pkg/kafkanotifier"
 
 	_ "net/http/pprof"
 )

@@ -1,4 +1,4 @@
-module github.com/jalapeno/ebgp-graph
+module github.com/jalapeno/bgpv6-graph
 
 go 1.17
 

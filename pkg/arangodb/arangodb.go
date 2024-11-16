@@ -8,7 +8,7 @@ import (
 	driver "github.com/arangodb/go-driver"
 	"github.com/cisco-open/jalapeno/topology/dbclient"
 	"github.com/golang/glog"
-	"github.com/jalapeno/ebgp-graph/pkg/kafkanotifier"
+	"github.com/jalapeno/bgpv6-graph/pkg/kafkanotifier"
 	"github.com/sbezverk/gobmp/pkg/bmp"
 	"github.com/sbezverk/gobmp/pkg/message"
 	"github.com/sbezverk/gobmp/pkg/tools"
