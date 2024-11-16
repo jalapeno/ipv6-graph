@@ -1,0 +1,5 @@
+FROM scratch
+
+COPY ./bin/ebgp-graph /ebgp-graph
+ENTRYPOINT ["/ebgp-graph"]
+
