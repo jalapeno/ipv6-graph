@@ -13,7 +13,7 @@ func (a *arangoDB) processInetPrefix(ctx context.Context, key string, e *message
 	if e.PeerASN >= 64512 && e.PeerASN <= 65535 {
 		return a.processeNewPrefix(ctx, key, e)
 	} else {
-		query := "for l in ebgp_peer filter l.asn !in 64512..65535"
+		query := "for l in ebgp_peer_v6 filter l.asn !in 64512..65535"
 		query += " return l"
 
 		pcursor, err := a.db.Query(ctx, query, nil)

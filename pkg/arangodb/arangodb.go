@@ -275,9 +275,18 @@ func (a *arangoDB) loadEdge() error {
 	defer cursor.Close()
 
 	// Find and populate ebgp_peers
+	// glog.Infof("copying unique ebgp peers into ebgp_peer collection")
+	// ebgp_peer_query := "for p in peer let internal_asns = ( for l in ls_node return l.peer_asn ) " +
+	// 	"filter p.remote_asn not in internal_asns insert { _key: CONCAT_SEPARATOR(" + "\"_\", p.remote_bgp_id, p.remote_asn), " +
+	// 	"router_id: p.remote_bgp_id, asn: p.remote_asn  } INTO ebgp_peer_v6 OPTIONS { ignoreErrors: true }"
+	// cursor, err = a.db.Query(ctx, ebgp_peer_query, nil)
+	// if err != nil {
+	// 	return err
+	// }
+	// defer cursor.Close()
+
 	glog.Infof("copying unique ebgp peers into ebgp_peer collection")
-	ebgp_peer_query := "for p in peer let internal_asns = ( for l in ls_node return l.peer_asn ) " +
-		"filter p.remote_asn not in internal_asns insert { _key: CONCAT_SEPARATOR(" + "\"_\", p.remote_bgp_id, p.remote_asn), " +
+	ebgp_peer_query := "for p in peer insert { _key: CONCAT_SEPARATOR(" + "\"_\", p.remote_bgp_id, p.remote_asn), " +
 		"router_id: p.remote_bgp_id, asn: p.remote_asn  } INTO ebgp_peer_v6 OPTIONS { ignoreErrors: true }"
 	cursor, err = a.db.Query(ctx, ebgp_peer_query, nil)
 	if err != nil {
