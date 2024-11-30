@@ -24,7 +24,7 @@ type arangoDB struct {
 	unicastprefixV6 driver.Collection
 	ebgpprefixV6    driver.Collection
 	inetprefixV6    driver.Collection
-	ipv6Graph      driver.Graph
+	ipv6Graph       driver.Graph
 	notifier        kafkanotifier.Event
 }
 
@@ -333,6 +333,27 @@ func (a *arangoDB) loadEdge() error {
 		}
 		//glog.Infof("get ipv eBGP prefixes: %s", p.Key)
 		if err := a.processeBgpPrefix(ctx, meta.Key, &p); err != nil {
+			glog.Errorf("failed to process key: %s with error: %+v", meta.Key, err)
+			continue
+		}
+	}
+
+	inet_prefix_query := "for p in inet_prefix_v6 return p"
+	cursor, err = a.db.Query(ctx, inet_prefix_query, nil)
+	if err != nil {
+		return err
+	}
+	defer cursor.Close()
+	for {
+		var p message.UnicastPrefix
+		meta, err := cursor.ReadDocument(ctx, &p)
+		if driver.IsNoMoreDocuments(err) {
+			break
+		} else if err != nil {
+			return err
+		}
+		//glog.Infof("get ipv inet prefixes: %s", p.Key)
+		if err := a.processInetPrefix(ctx, meta.Key, &p); err != nil {
 			glog.Errorf("failed to process key: %s with error: %+v", meta.Key, err)
 			continue
 		}
