@@ -1,7 +1,7 @@
 REGISTRY_NAME?=docker.io/iejalapeno
 IMAGE_VERSION?=latest
 
-.PHONY: all bgpv6-graph container push clean test
+.PHONY: all ipv6-graph container push clean test
 
 ifdef V
 TESTARGS = -v -args -alsologtostderr -v 5
@@ -9,17 +9,17 @@ else
 TESTARGS =
 endif
 
-all: bgpv6-graph
+all: ipv6-graph
 
-bgpv6-graph:
+ipv6-graph:
 	mkdir -p bin
-	$(MAKE) -C ./cmd compile-bgpv6-graph
+	$(MAKE) -C ./cmd compile-ipv6-graph
 
-bgpv6-graph-container: bgpv6-graph
-	docker build -t $(REGISTRY_NAME)/bgpv6-graph:$(IMAGE_VERSION) -f ./build/Dockerfile.bgpv6-graph .
+ipv6-graph-container: ipv6-graph
+	docker build -t $(REGISTRY_NAME)/ipv6-graph:$(IMAGE_VERSION) -f ./build/Dockerfile.ipv6-graph .
 
-push: bgpv6-graph-container
-	docker push $(REGISTRY_NAME)/bgpv6-graph:$(IMAGE_VERSION)
+push: ipv6-graph-container
+	docker push $(REGISTRY_NAME)/ipv6-graph:$(IMAGE_VERSION)
 
 clean:
 	rm -rf bin

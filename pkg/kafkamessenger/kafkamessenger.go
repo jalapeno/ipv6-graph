@@ -43,7 +43,7 @@ func NewKafkaMessenger(kafkaSrv string, db dbclient.DB) (Srv, error) {
 	}
 
 	config := sarama.NewConfig()
-	config.ClientID = "bgpv6-graph-collection"
+	config.ClientID = "ipv6-graph-collection"
 	config.Consumer.Return.Errors = true
 	config.Version = sarama.V0_11_0_0
 

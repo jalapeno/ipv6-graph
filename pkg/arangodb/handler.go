@@ -7,7 +7,7 @@ import (
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/golang/glog"
-	"github.com/jalapeno/bgpv6-graph/pkg/kafkanotifier"
+	"github.com/jalapeno/ipv6-graph/pkg/kafkanotifier"
 	"github.com/sbezverk/gobmp/pkg/message"
 )
 

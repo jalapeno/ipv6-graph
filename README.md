@@ -1,4 +1,4 @@
-# bgpv6-graph
+# ipv6-graph
 
-Run this processor in a Jalapeno environment to calculate and construct a graph of the BGPv6 topology.
+Run this processor in a Jalapeno environment to calculate and construct a graph of the ipv6 topology.
    

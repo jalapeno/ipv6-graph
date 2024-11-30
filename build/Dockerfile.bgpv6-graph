@@ -1,5 +1,0 @@
-FROM scratch
-
-COPY ./bin/bgpv6-graph /bgpv6-graph
-ENTRYPOINT ["/bgpv6-graph"]
-

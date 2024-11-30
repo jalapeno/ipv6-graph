@@ -8,7 +8,7 @@ import (
 	driver "github.com/arangodb/go-driver"
 	"github.com/cisco-open/jalapeno/topology/dbclient"
 	"github.com/golang/glog"
-	"github.com/jalapeno/bgpv6-graph/pkg/kafkanotifier"
+	"github.com/jalapeno/ipv6-graph/pkg/kafkanotifier"
 	"github.com/sbezverk/gobmp/pkg/bmp"
 	"github.com/sbezverk/gobmp/pkg/message"
 	"github.com/sbezverk/gobmp/pkg/tools"
@@ -24,13 +24,13 @@ type arangoDB struct {
 	unicastprefixV6 driver.Collection
 	ebgpprefixV6    driver.Collection
 	inetprefixV6    driver.Collection
-	bgpV6Graph      driver.Graph
+	ipv6Graph      driver.Graph
 	notifier        kafkanotifier.Event
 }
 
 // NewDBSrvClient returns an instance of a DB server client process
 func NewDBSrvClient(arangoSrv, user, pass, dbname, peer, ebgppeerV6, unicastprefixV6,
-	ebgpprefixV6, inetprefixV6, bgpV6Graph string,
+	ebgpprefixV6, inetprefixV6, ipv6Graph string,
 	notifier kafkanotifier.Event) (dbclient.Srv, error) {
 	if err := tools.URLAddrValidation(arangoSrv); err != nil {
 		return nil, err
@@ -105,21 +105,21 @@ func NewDBSrvClient(arangoSrv, user, pass, dbname, peer, ebgppeerV6, unicastpref
 		return nil, err
 	}
 
-	//glog.Infof("create ebgpv6 peer collection")
+	//glog.Infof("create eipv6 peer collection")
 	// create ebgp_peer_v6 collection
 	var ebgppeerV6_options = &driver.CreateCollectionOptions{ /* ... */ }
 	arango.ebgpPeerV6, err = arango.db.CreateCollection(context.TODO(), "ebgp_peer_v6", ebgppeerV6_options)
 	if err != nil {
 		return nil, err
 	}
-	//glog.Infof("check ebgpv6 peer collection")
+	//glog.Infof("check eipv6 peer collection")
 
 	// Check if eBGP Peer collection exists, if not fail as Jalapeno topology is not running
 	arango.ebgpPeerV6, err = arango.db.Collection(context.TODO(), ebgppeerV6)
 	if err != nil {
 		return nil, err
 	}
-	//glog.Infof("create ebgpv6 prefix collection")
+	//glog.Infof("create eipv6 prefix collection")
 
 	// create ebgp prefix V6 collection
 	var ebgpprefixV6_options = &driver.CreateCollectionOptions{ /* ... */ }
@@ -127,7 +127,7 @@ func NewDBSrvClient(arangoSrv, user, pass, dbname, peer, ebgppeerV6, unicastpref
 	if err != nil {
 		return nil, err
 	}
-	//glog.Infof("check ebgpv6 prefix collection")
+	//glog.Infof("check eipv6 prefix collection")
 
 	// check if collection exists, if not fail as processor has failed to create collection
 	arango.ebgpprefixV6, err = arango.db.Collection(context.TODO(), ebgpprefixV6)
@@ -152,12 +152,12 @@ func NewDBSrvClient(arangoSrv, user, pass, dbname, peer, ebgppeerV6, unicastpref
 
 	glog.Infof("checking for graph")
 	// check for ipv6 topology graph
-	found, err = arango.db.GraphExists(context.TODO(), bgpV6Graph)
+	found, err = arango.db.GraphExists(context.TODO(), ipv6Graph)
 	if err != nil {
 		return nil, err
 	}
 	if found {
-		c, err := arango.db.Graph(context.TODO(), bgpV6Graph)
+		c, err := arango.db.Graph(context.TODO(), ipv6Graph)
 		if err != nil {
 			return nil, err
 		}
@@ -166,31 +166,31 @@ func NewDBSrvClient(arangoSrv, user, pass, dbname, peer, ebgppeerV6, unicastpref
 	} else {
 		// create graph
 		var edgeDefinition driver.EdgeDefinition
-		edgeDefinition.Collection = "bgpv6_graph"
+		edgeDefinition.Collection = "ipv6_graph"
 		edgeDefinition.From = []string{"ebgp_peer_v6", "ebgp_prefix_v6", "inet_prefix_v6"}
 		edgeDefinition.To = []string{"ebgp_peer_v6", "ebgp_prefix_v6", "inet_prefix_v6"}
 		var options driver.CreateGraphOptions
 		options.EdgeDefinitions = []driver.EdgeDefinition{edgeDefinition}
 
-		glog.Infof("creating graph %s", bgpV6Graph)
-		arango.bgpV6Graph, err = arango.db.CreateGraph(context.TODO(), bgpV6Graph, &options)
+		glog.Infof("creating graph %s", ipv6Graph)
+		arango.ipv6Graph, err = arango.db.CreateGraph(context.TODO(), ipv6Graph, &options)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// check if graph exists, if not fail as processor has failed to create graph
-	arango.bgpV6Graph, err = arango.db.Graph(context.TODO(), bgpV6Graph)
-	glog.Infof("checking collection %s", bgpV6Graph)
+	arango.ipv6Graph, err = arango.db.Graph(context.TODO(), ipv6Graph)
+	glog.Infof("checking collection %s", ipv6Graph)
 	if err != nil {
 		return nil, err
 	}
 
 	// After creating/checking the graph, get the edge collection
 	glog.Infof("getting graph edge collection")
-	if arango.bgpV6Graph != nil {
+	if arango.ipv6Graph != nil {
 		// Get the edge collection from the graph
-		arango.graph, err = arango.db.Collection(context.TODO(), "bgpv6_graph")
+		arango.graph, err = arango.db.Collection(context.TODO(), "ipv6_graph")
 		if err != nil {
 			return nil, fmt.Errorf("failed to get graph edge collection: %v", err)
 		}
@@ -198,7 +198,7 @@ func NewDBSrvClient(arangoSrv, user, pass, dbname, peer, ebgppeerV6, unicastpref
 			return nil, fmt.Errorf("graph edge collection is nil")
 		}
 	} else {
-		return nil, fmt.Errorf("bgpV6Graph is nil")
+		return nil, fmt.Errorf("ipv6Graph is nil")
 	}
 
 	return arango, nil
@@ -251,7 +251,7 @@ func (a *arangoDB) loadEdge() error {
 	glog.Infof("start processing vertices and edges")
 
 	glog.Infof("insert link-state graph topology into ipv6 graph")
-	copy_ls_topo := "for l in lsv6_graph insert l in bgpv6_graph options { overwrite: " + "\"update\"" + " } "
+	copy_ls_topo := "for l in lsv6_graph insert l in ipv6_graph options { overwrite: " + "\"update\"" + " } "
 	cursor, err := a.db.Query(ctx, copy_ls_topo, nil)
 	if err != nil {
 		glog.Errorf("Failed to copy link-state topology; it may not exist or have been populated in the database: %v", err)
@@ -294,7 +294,7 @@ func (a *arangoDB) loadEdge() error {
 	}
 	defer cursor.Close()
 
-	// start building bgpv6 graph
+	// start building ipv6 graph
 	peer2peer_query := "for p in peer return p"
 	cursor, err = a.db.Query(ctx, peer2peer_query, nil)
 	if err != nil {
