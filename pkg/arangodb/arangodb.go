@@ -250,13 +250,22 @@ func (a *arangoDB) loadEdge() error {
 	ctx := context.TODO()
 	glog.Infof("start processing vertices and edges")
 
+	glog.Infof("insert link-state graph topology into ipv6 graph")
+	copy_ls_topo := "for l in lsv6_graph insert l in bgpv6_graph options { overwrite: " + "\"update\"" + " } "
+	cursor, err := a.db.Query(ctx, copy_ls_topo, nil)
+	if err != nil {
+		glog.Errorf("Failed to copy link-state topology; it may not exist or have been populated in the database: %v", err)
+	} else {
+		defer cursor.Close()
+	}
+
 	glog.Infof("copying private ASN ebgp unicast v6 prefixes into ebgp_prefix_v6 collection")
 	ebgp6_query := "FOR u IN unicast_prefix_v6 FILTER u.peer_asn IN 64512..65535 FILTER u.origin_as IN 64512..65535 " +
 		"FILTER u.prefix_len < 96 FILTER u.base_attrs.as_path_count == 1 FOR p IN peer FILTER u.peer_ip == p.remote_ip " +
 		"INSERT { _key: CONCAT_SEPARATOR(" + "\"_\", u.prefix, u.prefix_len), prefix: u.prefix, prefix_len: u.prefix_len, " +
 		"origin_as: u.origin_as, nexthop: u.nexthop, peer_ip: u.peer_ip, remote_ip: p.remote_ip, router_id: p.remote_bgp_id } " +
 		"INTO ebgp_prefix_v6 OPTIONS { ignoreErrors: true } "
-	cursor, err := a.db.Query(ctx, ebgp6_query, nil)
+	cursor, err = a.db.Query(ctx, ebgp6_query, nil)
 	if err != nil {
 		return err
 	}
@@ -274,19 +283,10 @@ func (a *arangoDB) loadEdge() error {
 	}
 	defer cursor.Close()
 
-	// Find and populate ebgp_peers
-	// glog.Infof("copying unique ebgp peers into ebgp_peer collection")
-	// ebgp_peer_query := "for p in peer let internal_asns = ( for l in ls_node return l.peer_asn ) " +
-	// 	"filter p.remote_asn not in internal_asns insert { _key: CONCAT_SEPARATOR(" + "\"_\", p.remote_bgp_id, p.remote_asn), " +
-	// 	"router_id: p.remote_bgp_id, asn: p.remote_asn  } INTO ebgp_peer_v6 OPTIONS { ignoreErrors: true }"
-	// cursor, err = a.db.Query(ctx, ebgp_peer_query, nil)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer cursor.Close()
-
 	glog.Infof("copying unique ebgp peers into ebgp_peer collection")
-	ebgp_peer_query := "for p in peer insert { _key: CONCAT_SEPARATOR(" + "\"_\", p.remote_bgp_id, p.remote_asn), " +
+	ebgp_peer_query := "for p in peer let igp_asns = ( for n in ls_node_extended return n.peer_asn ) " +
+		"filter p.remote_asn not in igp_asns " +
+		"insert { _key: CONCAT_SEPARATOR(" + "\"_\", p.remote_bgp_id, p.remote_asn), " +
 		"router_id: p.remote_bgp_id, asn: p.remote_asn  } INTO ebgp_peer_v6 OPTIONS { ignoreErrors: true }"
 	cursor, err = a.db.Query(ctx, ebgp_peer_query, nil)
 	if err != nil {
@@ -337,5 +337,29 @@ func (a *arangoDB) loadEdge() error {
 			continue
 		}
 	}
+
+	// Find eBGP egress / Inet peers from IGP domain. This could also be egress from IGP domain to internal eBGP peers
+	bgp_query := "for l in peer let internal_asns = ( for n in ls_node_extended return n.peer_asn ) " +
+		"filter l.local_asn in internal_asns && l.remote_asn not in internal_asns filter l._key like " + "\"%:%\"" + " return l"
+	cursor, err = a.db.Query(ctx, bgp_query, nil)
+	if err != nil {
+		return err
+	}
+	defer cursor.Close()
+	for {
+		var p message.PeerStateChange
+		meta, err := cursor.ReadDocument(ctx, &p)
+		if driver.IsNoMoreDocuments(err) {
+			break
+		} else if err != nil {
+			return err
+		}
+		//glog.Infof("processing eBGP peers for ls_node: %s", p.Key)
+		if err := a.processEgressPeer(ctx, meta.Key, &p); err != nil {
+			glog.Errorf("failed to process key: %s with error: %+v", meta.Key, err)
+			continue
+		}
+	}
+
 	return nil
 }
