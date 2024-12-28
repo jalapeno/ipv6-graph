@@ -26,12 +26,9 @@ func (a *arangoDB) processInetPrefix(ctx context.Context, key string, e *message
 			mp, err := pcursor.ReadDocument(ctx, &up)
 			if err != nil {
 				if driver.IsNoMoreDocuments(err) {
-					return err
+					break
 				}
-				if !driver.IsNoMoreDocuments(err) {
-					return err
-				}
-				break
+				return err
 			}
 
 			glog.Infof("ebgp peer %s + eBGP prefix %s, meta %+v", e.Key, up.Key, mp)
@@ -85,7 +82,8 @@ func (a *arangoDB) processeBgpPrefix(ctx context.Context, key string, e *bgpPref
 	// query := "for l in ebgp_peer_v6 filter l.router_id == '" + e.RouterID + "' and l.asn == " + strconv.Itoa(int(e.OriginAS))
 	// query += " return l	"
 
-	query := "for l in ebgp_peer_v6 filter l.router_id == '" + e.RouterID + "' and l.asn == " + strconv.FormatUint(uint64(e.OriginAS), 10)
+	originAS, _ := e.GetOriginAS()
+	query := "for l in ebgp_peer_v6 filter l.router_id == '" + e.RouterID + "' and l.asn == " + strconv.FormatUint(originAS, 10)
 	query += " return l	"
 
 	//glog.Infof("query: %+v", query)
@@ -100,25 +98,19 @@ func (a *arangoDB) processeBgpPrefix(ctx context.Context, key string, e *bgpPref
 		mp, err := pcursor.ReadDocument(ctx, &up)
 		if err != nil {
 			if driver.IsNoMoreDocuments(err) {
-				return err
+				break
 			}
-			if !driver.IsNoMoreDocuments(err) {
-				return err
-			}
-			break
+			return err
 		}
 
 		glog.Infof("eBGP node and unicastprefix %s, meta %+v, %v", e.Key, up.Key, mp)
 		from := unicastPrefixEdgeObject{
-			Key:  up.Key + "_" + e.Key,
-			From: up.ID,
-			To:   e.ID,
-			// Prefix:    up.Prefix,
-			// PrefixLen: up.PrefixLen,
-			// OriginAS:  up.OriginAS,
+			Key:       up.Key + "_" + e.Key,
+			From:      up.ID,
+			To:        e.ID,
 			Prefix:    e.Prefix,
 			PrefixLen: e.PrefixLen,
-			OriginAS:  e.OriginAS,
+			OriginAS:  originAS,
 		}
 
 		if _, err := a.graph.CreateDocument(ctx, &from); err != nil {
@@ -131,15 +123,12 @@ func (a *arangoDB) processeBgpPrefix(ctx context.Context, key string, e *bgpPref
 			}
 		}
 		to := unicastPrefixEdgeObject{
-			Key:  e.Key + "_" + up.Key,
-			From: e.ID,
-			To:   up.ID,
-			// Prefix:    up.Prefix,
-			// PrefixLen: up.PrefixLen,
-			// OriginAS:  up.OriginAS,
+			Key:       e.Key + "_" + up.Key,
+			From:      e.ID,
+			To:        up.ID,
 			Prefix:    e.Prefix,
 			PrefixLen: e.PrefixLen,
-			OriginAS:  e.OriginAS,
+			OriginAS:  originAS,
 		}
 
 		if _, err := a.graph.CreateDocument(ctx, &to); err != nil {
