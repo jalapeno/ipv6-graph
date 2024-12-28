@@ -21,7 +21,7 @@ type peerToObject struct {
 	RemoteIP    string              `json:"remote_ip"`
 	BaseAttrs   *bgp.BaseAttributes `json:"base_attrs"`
 	LocalASN    uint32              `json:"local_asn"`
-	RemoteASN   uint32              `json:"reote_asn"`
+	RemoteASN   uint32              `json:"remote_asn"`
 	OriginAS    int32               `json:"origin_as"`
 	ProtocolID  base.ProtoID        `json:"protocol_id"`
 	Nexthop     string              `json:"nexthop"`
@@ -40,7 +40,7 @@ type peerFromObject struct {
 	RemoteIP    string              `json:"remote_ip"`
 	BaseAttrs   *bgp.BaseAttributes `json:"base_attrs"`
 	LocalASN    uint32              `json:"local_asn"`
-	RemoteASN   uint32              `json:"reote_asn"`
+	RemoteASN   uint32              `json:"remote_asn"`
 	OriginAS    uint32              `json:"origin_as"`
 	ProtocolID  base.ProtoID        `json:"protocol_id"`
 	Nexthop     string              `json:"nexthop"`
