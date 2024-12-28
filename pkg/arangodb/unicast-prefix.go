@@ -13,7 +13,7 @@ func (a *arangoDB) processInetPrefix(ctx context.Context, key string, e *message
 	if e.PeerASN >= 64512 && e.PeerASN <= 65535 {
 		return a.processeNewPrefix(ctx, key, e)
 	} else {
-		query := "for l in ebgp_peer_v6 filter l.asn !in 64512..65535"
+		query := "for l in ebgp_peer_v6 filter l.asn !in 64512..65535 filter l.asn !in 4200000000..4294967294"
 		query += " return l"
 
 		pcursor, err := a.db.Query(ctx, query, nil)
@@ -82,16 +82,21 @@ func (a *arangoDB) processeBgpPrefix(ctx context.Context, key string, e *bgpPref
 	// if e.BaseAttributes.ASPathCount != 1 {
 	// 	return nil
 	// }
-	query := "for l in ebgp_peer_v6 filter l.router_id == '" + e.RouterID + "' and l.asn == " + strconv.Itoa(int(e.OriginAS))
+	// query := "for l in ebgp_peer_v6 filter l.router_id == '" + e.RouterID + "' and l.asn == " + strconv.Itoa(int(e.OriginAS))
+	// query += " return l	"
+
+	query := "for l in ebgp_peer_v6 filter l.router_id == '" + e.RouterID + "' and l.asn == " + strconv.FormatUint(uint64(e.OriginAS), 10)
 	query += " return l	"
-	glog.Infof("query: %+v", query)
+
+	//glog.Infof("query: %+v", query)
 	pcursor, err := a.db.Query(ctx, query, nil)
 	if err != nil {
 		return err
 	}
 	defer pcursor.Close()
 	for {
-		var up inetPrefix
+		// var up inetPrefix
+		var up bgpPeer
 		mp, err := pcursor.ReadDocument(ctx, &up)
 		if err != nil {
 			if driver.IsNoMoreDocuments(err) {
@@ -105,12 +110,15 @@ func (a *arangoDB) processeBgpPrefix(ctx context.Context, key string, e *bgpPref
 
 		glog.Infof("eBGP node and unicastprefix %s, meta %+v, %v", e.Key, up.Key, mp)
 		from := unicastPrefixEdgeObject{
-			Key:       up.Key + "_" + e.Key,
-			From:      up.ID,
-			To:        e.ID,
-			Prefix:    up.Prefix,
-			PrefixLen: up.PrefixLen,
-			OriginAS:  up.OriginAS,
+			Key:  up.Key + "_" + e.Key,
+			From: up.ID,
+			To:   e.ID,
+			// Prefix:    up.Prefix,
+			// PrefixLen: up.PrefixLen,
+			// OriginAS:  up.OriginAS,
+			Prefix:    e.Prefix,
+			PrefixLen: e.PrefixLen,
+			OriginAS:  e.OriginAS,
 		}
 
 		if _, err := a.graph.CreateDocument(ctx, &from); err != nil {
@@ -123,12 +131,15 @@ func (a *arangoDB) processeBgpPrefix(ctx context.Context, key string, e *bgpPref
 			}
 		}
 		to := unicastPrefixEdgeObject{
-			Key:       e.Key + "_" + up.Key,
-			From:      e.ID,
-			To:        up.ID,
-			Prefix:    up.Prefix,
-			PrefixLen: up.PrefixLen,
-			OriginAS:  up.OriginAS,
+			Key:  e.Key + "_" + up.Key,
+			From: e.ID,
+			To:   up.ID,
+			// Prefix:    up.Prefix,
+			// PrefixLen: up.PrefixLen,
+			// OriginAS:  up.OriginAS,
+			Prefix:    e.Prefix,
+			PrefixLen: e.PrefixLen,
+			OriginAS:  e.OriginAS,
 		}
 
 		if _, err := a.graph.CreateDocument(ctx, &to); err != nil {

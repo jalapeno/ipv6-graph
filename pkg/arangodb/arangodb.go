@@ -271,9 +271,23 @@ func (a *arangoDB) loadEdge() error {
 	}
 	defer cursor.Close()
 
+	glog.Infof("copying 4-byte private ASN ebgp unicast v6 prefixes into ebgp_prefix_v6 collection")
+	fourByteEbgp6Query := "FOR u IN unicast_prefix_v6 FILTER u.peer_asn IN 4200000000..4294967294 " +
+		"FILTER u.prefix_len < 96 FILTER u.base_attrs.as_path_count == 1 FOR p IN peer FILTER u.peer_ip == p.remote_ip " +
+		"INSERT { _key: CONCAT_SEPARATOR(\"_\", u.prefix, u.prefix_len), prefix: u.prefix, prefix_len: u.prefix_len, " +
+		"origin_as: u.origin_as < 0 ? u.origin_as + 4294967296 : u.origin_as, nexthop: u.nexthop, peer_ip: u.peer_ip, " +
+		"remote_ip: p.remote_ip, router_id: p.remote_bgp_id } " +
+		"INTO ebgp_prefix_v6 OPTIONS { ignoreErrors: true } "
+	cursor, err = a.db.Query(ctx, fourByteEbgp6Query, nil)
+	if err != nil {
+		return err
+	}
+	defer cursor.Close()
+
 	glog.Infof("copying public ASN unicast v6 prefixes into inet_prefix_v6 collection")
 	inet6_query := "for u in unicast_prefix_v6 let internal_asns = ( for l in ls_node return l.peer_asn ) " +
-		"filter u.peer_asn not in internal_asns filter u.peer_asn !in 64512..65535 filter u.origin_as !in 64512..65535 filter u.prefix_len < 96 " +
+		"filter u.peer_asn not in internal_asns filter u.peer_asn !in 64512..65535 filter u.peer_asn !in  4200000000..4294967294 " +
+		" filter u.origin_as !in 64512..65535 filter u.prefix_len < 96 " +
 		"filter u.remote_asn != u.origin_as INSERT { _key: CONCAT_SEPARATOR(" + "\"_\", u.prefix, u.prefix_len)," +
 		"prefix: u.prefix, prefix_len: u.prefix_len, origin_as: u.origin_as, nexthop: u.nexthop } " +
 		"INTO inet_prefix_v6 OPTIONS { ignoreErrors: true }"
@@ -282,6 +296,18 @@ func (a *arangoDB) loadEdge() error {
 		return err
 	}
 	defer cursor.Close()
+
+	// glog.Infof("copying public ASN unicast v6 prefixes into inet_prefix_v6 collection")
+	// fourByteInet6Query := "for u in unicast_prefix_v6 let internal_asns = ( for l in ls_node return l.peer_asn ) " +
+	// 	"filter u.peer_asn not in internal_asns filter u.peer_asn !in 4200000000..4294967294 filter u.prefix_len < 96 " +
+	// 	"filter u.remote_asn != u.origin_as INSERT { _key: CONCAT_SEPARATOR(" + "\"_\", u.prefix, u.prefix_len)," +
+	// 	"prefix: u.prefix, prefix_len: u.prefix_len, origin_as: u.origin_as, nexthop: u.nexthop } " +
+	// 	"INTO inet_prefix_v6 OPTIONS { ignoreErrors: true }"
+	// cursor, err = a.db.Query(ctx, fourByteInet6Query, nil)
+	// if err != nil {
+	// 	return err
+	// }
+	// defer cursor.Close()
 
 	glog.Infof("copying unique ebgp peers into ebgp_peer collection")
 	ebgp_peer_query := "for p in peer let igp_asns = ( for n in ls_node_extended return n.peer_asn ) " +
@@ -295,26 +321,26 @@ func (a *arangoDB) loadEdge() error {
 	defer cursor.Close()
 
 	// start building ipv6 graph
-	peer2peer_query := "for p in peer return p"
-	cursor, err = a.db.Query(ctx, peer2peer_query, nil)
-	if err != nil {
-		return err
-	}
-	defer cursor.Close()
-	for {
-		var p message.PeerStateChange
-		meta, err := cursor.ReadDocument(ctx, &p)
-		if driver.IsNoMoreDocuments(err) {
-			break
-		} else if err != nil {
-			return err
-		}
-		//glog.Infof("find ebgp peers to populate graph: %s", p.Key)
-		if err := a.processPeerSession(ctx, meta.Key, &p); err != nil {
-			glog.Errorf("failed to process key: %s with error: %+v", meta.Key, err)
-			continue
-		}
-	}
+	// peer2peer_query := "for p in peer return p"
+	// cursor, err = a.db.Query(ctx, peer2peer_query, nil)
+	// if err != nil {
+	// 	return err
+	// }
+	// defer cursor.Close()
+	// for {
+	// 	var p message.PeerStateChange
+	// 	meta, err := cursor.ReadDocument(ctx, &p)
+	// 	if driver.IsNoMoreDocuments(err) {
+	// 		break
+	// 	} else if err != nil {
+	// 		return err
+	// 	}
+	// 	//glog.Infof("find ebgp peers to populate graph: %s", p.Key)
+	// 	if err := a.processPeerSession(ctx, meta.Key, &p); err != nil {
+	// 		glog.Errorf("failed to process key: %s with error: %+v", meta.Key, err)
+	// 		continue
+	// 	}
+	// }
 
 	//unicast_prefix_v6_query := "for p in unicast_prefix_v6 filter p.prefix_len < 96 return p"
 	bgp_prefix_query := "for p in ebgp_prefix_v6 return p"

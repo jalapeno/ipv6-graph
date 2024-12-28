@@ -38,7 +38,7 @@ type peerFromObject struct {
 	BaseAttrs   *bgp.BaseAttributes `json:"base_attrs"`
 	LocalASN    uint32              `json:"local_asn"`
 	RemoteASN   uint32              `json:"reote_asn"`
-	OriginAS    int32               `json:"origin_as"`
+	OriginAS    uint32              `json:"origin_as"`
 	ProtocolID  base.ProtoID        `json:"protocol_id"`
 	Nexthop     string              `json:"nexthop"`
 	Labels      []uint32            `json:"labels"`
@@ -56,7 +56,7 @@ type unicastPrefixEdgeObject struct {
 	PeerIP     string              `json:"peer_ip"`
 	BaseAttrs  *bgp.BaseAttributes `json:"base_attrs"`
 	PeerASN    uint32              `json:"peer_asn"`
-	OriginAS   int32               `json:"origin_as"`
+	OriginAS   uint32              `json:"origin_as"`
 	ProtocolID base.ProtoID        `json:"protocol_id"`
 	Nexthop    string              `json:"nexthop"`
 	Labels     []uint32            `json:"labels"`
@@ -64,12 +64,29 @@ type unicastPrefixEdgeObject struct {
 	PeerName   string              `json:"peer_name"`
 }
 
+type bgpPeer struct {
+	Key             string         `json:"_key,omitempty"`
+	ID              string         `json:"_id,omitempty"`
+	BGPRouterID     string         `json:"router_id,omitempty"`
+	ASN             int            `json:"asn"`
+	AdvCapabilities bgp.Capability `json:"adv_cap,omitempty"`
+}
+
+type bgpPrefix struct {
+	ID        string `json:"_id,omitempty"`
+	Key       string `json:"_key"`
+	Prefix    string `json:"prefix"`
+	PrefixLen int32  `json:"prefix_len"`
+	OriginAS  uint32 `json:"origin_as"`
+	RouterID  string `json:"router_id"`
+}
+
 type inetPrefix struct {
 	ID        string `json:"_id,omitempty"`
 	Key       string `json:"_key,omitempty"`
 	Prefix    string `json:"prefix,omitempty"`
 	PrefixLen int32  `json:"prefix_len,omitempty"`
-	OriginAS  int32  `json:"origin_as"`
+	OriginAS  uint32 `json:"origin_as"`
 }
 
 type inetPrefixEdgeObject struct {
@@ -88,23 +105,6 @@ type inetPrefixEdgeObject struct {
 	Labels     []uint32            `json:"labels"`
 	Name       string              `json:"name"`
 	PeerName   string              `json:"peer_name"`
-}
-
-type bgpPeer struct {
-	Key             string         `json:"_key,omitempty"`
-	ID              string         `json:"_id,omitempty"`
-	BGPRouterID     string         `json:"router_id,omitempty"`
-	ASN             int32          `json:"asn"`
-	AdvCapabilities bgp.Capability `json:"adv_cap,omitempty"`
-}
-
-type bgpPrefix struct {
-	ID        string `json:"_id,omitempty"`
-	Key       string `json:"_key"`
-	Prefix    string `json:"prefix"`
-	PrefixLen int32  `json:"prefix_len"`
-	OriginAS  int32  `json:"origin_as"`
-	RouterID  string `json:"router_id"`
 }
 
 type LSNodeExt struct {
