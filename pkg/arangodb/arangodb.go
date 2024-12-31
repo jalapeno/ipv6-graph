@@ -321,26 +321,26 @@ func (a *arangoDB) loadEdge() error {
 	defer cursor.Close()
 
 	// start building ipv6 graph
-	// peer2peer_query := "for p in peer return p"
-	// cursor, err = a.db.Query(ctx, peer2peer_query, nil)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer cursor.Close()
-	// for {
-	// 	var p message.PeerStateChange
-	// 	meta, err := cursor.ReadDocument(ctx, &p)
-	// 	if driver.IsNoMoreDocuments(err) {
-	// 		break
-	// 	} else if err != nil {
-	// 		return err
-	// 	}
-	// 	//glog.Infof("find ebgp peers to populate graph: %s", p.Key)
-	// 	if err := a.processPeerSession(ctx, meta.Key, &p); err != nil {
-	// 		glog.Errorf("failed to process key: %s with error: %+v", meta.Key, err)
-	// 		continue
-	// 	}
-	// }
+	peer2peer_query := "for p in peer return p"
+	cursor, err = a.db.Query(ctx, peer2peer_query, nil)
+	if err != nil {
+		return err
+	}
+	defer cursor.Close()
+	for {
+		var p message.PeerStateChange
+		meta, err := cursor.ReadDocument(ctx, &p)
+		if driver.IsNoMoreDocuments(err) {
+			break
+		} else if err != nil {
+			return err
+		}
+		//glog.Infof("find ebgp peers to populate graph: %s", p.Key)
+		if err := a.processPeerSession(ctx, meta.Key, &p); err != nil {
+			glog.Errorf("failed to process key: %s with error: %+v", meta.Key, err)
+			continue
+		}
+	}
 
 	//unicast_prefix_v6_query := "for p in unicast_prefix_v6 filter p.prefix_len < 96 return p"
 	bgp_prefix_query := "for p in ebgp_prefix_v6 return p"

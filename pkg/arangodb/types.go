@@ -1,6 +1,9 @@
 package arangodb
 
 import (
+	"encoding/json"
+	"strconv"
+
 	"github.com/sbezverk/gobmp/pkg/base"
 	"github.com/sbezverk/gobmp/pkg/bgp"
 	"github.com/sbezverk/gobmp/pkg/bgpls"
@@ -18,7 +21,7 @@ type peerToObject struct {
 	RemoteIP    string              `json:"remote_ip"`
 	BaseAttrs   *bgp.BaseAttributes `json:"base_attrs"`
 	LocalASN    uint32              `json:"local_asn"`
-	RemoteASN   uint32              `json:"reote_asn"`
+	RemoteASN   uint32              `json:"remote_asn"`
 	OriginAS    int32               `json:"origin_as"`
 	ProtocolID  base.ProtoID        `json:"protocol_id"`
 	Nexthop     string              `json:"nexthop"`
@@ -37,7 +40,7 @@ type peerFromObject struct {
 	RemoteIP    string              `json:"remote_ip"`
 	BaseAttrs   *bgp.BaseAttributes `json:"base_attrs"`
 	LocalASN    uint32              `json:"local_asn"`
-	RemoteASN   uint32              `json:"reote_asn"`
+	RemoteASN   uint32              `json:"remote_asn"`
 	OriginAS    uint32              `json:"origin_as"`
 	ProtocolID  base.ProtoID        `json:"protocol_id"`
 	Nexthop     string              `json:"nexthop"`
@@ -56,7 +59,7 @@ type unicastPrefixEdgeObject struct {
 	PeerIP     string              `json:"peer_ip"`
 	BaseAttrs  *bgp.BaseAttributes `json:"base_attrs"`
 	PeerASN    uint32              `json:"peer_asn"`
-	OriginAS   uint32              `json:"origin_as"`
+	OriginAS   uint64              `json:"origin_as"`
 	ProtocolID base.ProtoID        `json:"protocol_id"`
 	Nexthop    string              `json:"nexthop"`
 	Labels     []uint32            `json:"labels"`
@@ -73,12 +76,44 @@ type bgpPeer struct {
 }
 
 type bgpPrefix struct {
-	ID        string `json:"_id,omitempty"`
-	Key       string `json:"_key"`
-	Prefix    string `json:"prefix"`
-	PrefixLen int32  `json:"prefix_len"`
-	OriginAS  uint32 `json:"origin_as"`
-	RouterID  string `json:"router_id"`
+	ID        string      `json:"_id,omitempty"`
+	Key       string      `json:"_key"`
+	Prefix    string      `json:"prefix"`
+	PrefixLen int32       `json:"prefix_len"`
+	OriginAS  json.Number `json:"origin_as,string"`
+	RouterID  string      `json:"router_id"`
+}
+
+// UnmarshalJSON implements custom unmarshaling for bgpPrefix
+func (bp *bgpPrefix) UnmarshalJSON(data []byte) error {
+	type Alias bgpPrefix
+	aux := &struct {
+		OriginAS interface{} `json:"origin_as"`
+		*Alias
+	}{
+		Alias: (*Alias)(bp),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Handle different types of origin_as value
+	switch v := aux.OriginAS.(type) {
+	case float64:
+		bp.OriginAS = json.Number(strconv.FormatUint(uint64(v), 10))
+	case string:
+		bp.OriginAS = json.Number(v)
+	case json.Number:
+		bp.OriginAS = v
+	}
+
+	return nil
+}
+
+// GetOriginAS returns the OriginAS as uint64
+func (bp *bgpPrefix) GetOriginAS() (uint64, error) {
+	return strconv.ParseUint(string(bp.OriginAS), 10, 64)
 }
 
 type inetPrefix struct {
@@ -86,7 +121,7 @@ type inetPrefix struct {
 	Key       string `json:"_key,omitempty"`
 	Prefix    string `json:"prefix,omitempty"`
 	PrefixLen int32  `json:"prefix_len,omitempty"`
-	OriginAS  uint32 `json:"origin_as"`
+	OriginAS  uint64 `json:"origin_as"`
 }
 
 type inetPrefixEdgeObject struct {
