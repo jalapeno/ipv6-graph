@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	driver "github.com/arangodb/go-driver"
-	"github.com/golang/glog"
 	"github.com/jalapeno/ipv6-graph/pkg/kafkanotifier"
 	"github.com/sbezverk/gobmp/pkg/message"
 )
@@ -47,7 +46,7 @@ func (a *arangoDB) unicastprefixHandler(obj *kafkanotifier.EventMessage) error {
 	if obj == nil {
 		return fmt.Errorf("event message is nil")
 	}
-	glog.V(5).Infof("Processing action: %s for key: %s ID: %s", obj.Action, obj.Key, obj.ID)
+	// glog.V(5).Infof("Processing action: %s for key: %s ID: %s", obj.Action, obj.Key, obj.ID)
 	var o message.UnicastPrefix
 	// Skip if not an IPv6 address (no colons present)
 	if !strings.Contains(obj.Key, ":") {
@@ -67,12 +66,12 @@ func (a *arangoDB) unicastprefixHandler(obj *kafkanotifier.EventMessage) error {
 	}
 	switch obj.Action {
 	case "update":
-		glog.V(5).Infof("Send update msg to processEPEPrefix function")
+		// glog.V(5).Infof("Send update msg to processEPEPrefix function")
 		if err := a.processInetPrefix(ctx, obj.Key, &o); err != nil {
 			return fmt.Errorf("failed to process action %s for edge %s with error: %+v", obj.Action, obj.Key, err)
 		}
 	case "add":
-		glog.V(5).Infof("Send add msg to processEPEPrefix function")
+		// glog.V(5).Infof("Send add msg to processEPEPrefix function")
 		if err := a.processInetPrefix(ctx, obj.Key, &o); err != nil {
 			return fmt.Errorf("failed to process action %s for edge %s with error: %+v", obj.Action, obj.Key, err)
 		}

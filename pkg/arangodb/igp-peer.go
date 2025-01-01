@@ -34,9 +34,9 @@ func (a *arangoDB) processEgressPeer(ctx context.Context, key string, p *message
 }
 
 // getLocalnode returns the inside or ls_node side of the eBGP session. the || d.bgp_router ipv6-only ls_nodes
-func (a *arangoDB) getLocalnode(ctx context.Context, e *message.PeerStateChange, local bool) (LSNodeExt, error) {
+func (a *arangoDB) getLocalnode(ctx context.Context, e *message.PeerStateChange, local bool) (igpNode, error) {
 	// Need to find ls_node object matching ls_link's IGP Router ID
-	query := "for d in ls_node_extended "
+	query := "for d in igp_node "
 	if local {
 		glog.Infof("get local node per session: %s, %s", e.LocalBGPID, e.ID)
 		query += " filter d.router_id == " + "\"" + e.LocalBGPID + "\"" + " || d.bgp_router_id == " + "\"" + e.LocalBGPID + "\""
@@ -51,7 +51,7 @@ func (a *arangoDB) getLocalnode(ctx context.Context, e *message.PeerStateChange,
 		glog.Errorf("failed to process key: %s with error: %+v", e.Key, err)
 	}
 	defer lcursor.Close()
-	var ln LSNodeExt
+	var ln igpNode
 	i := 0
 	for ; ; i++ {
 		_, err := lcursor.ReadDocument(ctx, &ln)
@@ -74,12 +74,12 @@ func (a *arangoDB) getLocalnode(ctx context.Context, e *message.PeerStateChange,
 // getExtPeer returns the outside or ebgp peer side of the lsnode to eBGP session. the || d.bgp_router_id is for ipv6-only lsnodes
 func (a *arangoDB) getExtPeer(ctx context.Context, e *message.PeerStateChange, local bool) (bgpNode, error) {
 	// Need to find ls_node object matching ls_link's IGP Router ID
-	query := "FOR d IN " + a.ebgpPeerV6.Name()
+	query := "FOR d IN " + a.bgpNode.Name()
 	if local {
-		glog.Infof("get local node per session: %s, %s", e.LocalBGPID, e.ID)
+		// glog.Infof("get local node per session: %s, %s", e.LocalBGPID, e.ID)
 		query += " filter d.router_id == " + "\"" + e.LocalBGPID + "\"" + " || d.bgp_router_id == " + "\"" + e.LocalBGPID + "\""
 	} else {
-		glog.Infof("get remote node per session: %s, %v", e.RemoteBGPID, e.ID)
+		// glog.Infof("get remote node per session: %s, %v", e.RemoteBGPID, e.ID)
 		query += " filter d.router_id == " + "\"" + e.RemoteBGPID + "\"" + " || d.bgp_router_id == " + "\"" + e.RemoteBGPID + "\""
 	}
 	query += " return d"
@@ -109,7 +109,7 @@ func (a *arangoDB) getExtPeer(ctx context.Context, e *message.PeerStateChange, l
 	return ln, nil
 }
 
-func (a *arangoDB) createPRedge(ctx context.Context, p *message.PeerStateChange, ln LSNodeExt, rn bgpNode) error {
+func (a *arangoDB) createPRedge(ctx context.Context, p *message.PeerStateChange, ln igpNode, rn bgpNode) error {
 
 	if p.LocalASN == p.RemoteASN {
 		glog.Infof("peer message is iBGP, no further processing")
