@@ -44,17 +44,17 @@ var (
 
 func init() {
 	runtime.GOMAXPROCS(1)
-	// flag.StringVar(&msgSrvAddr, "message-server", "198.18.133.112:30092", "URL to the messages supplying server")
-	// flag.StringVar(&dbSrvAddr, "database-server", "http://198.18.133.112:30852", "{dns name}:port or X.X.X.X:port of the graph database")
-	// flag.StringVar(&dbName, "database-name", "jalapeno", "DB name")
-	// flag.StringVar(&dbUser, "database-user", "root", "DB User name")
-	// flag.StringVar(&dbPass, "database-pass", "jalapeno", "DB User's password")
+	flag.StringVar(&msgSrvAddr, "message-server", "198.18.133.111:30092", "URL to the messages supplying server")
+	flag.StringVar(&dbSrvAddr, "database-server", "http://198.18.133.111:30852", "{dns name}:port or X.X.X.X:port of the graph database")
+	flag.StringVar(&dbName, "database-name", "jalapeno", "DB name")
+	flag.StringVar(&dbUser, "database-user", "root", "DB User name")
+	flag.StringVar(&dbPass, "database-pass", "jalapeno", "DB User's password")
 
-	flag.StringVar(&msgSrvAddr, "message-server", "", "URL to the messages supplying server")
-	flag.StringVar(&dbSrvAddr, "database-server", "", "{dns name}:port or X.X.X.X:port of the graph database")
-	flag.StringVar(&dbName, "database-name", "", "DB name")
-	flag.StringVar(&dbUser, "database-user", "", "DB User name")
-	flag.StringVar(&dbPass, "database-pass", "", "DB User's password")
+	// flag.StringVar(&msgSrvAddr, "message-server", "", "URL to the messages supplying server")
+	// flag.StringVar(&dbSrvAddr, "database-server", "", "{dns name}:port or X.X.X.X:port of the graph database")
+	// flag.StringVar(&dbName, "database-name", "", "DB name")
+	// flag.StringVar(&dbUser, "database-user", "", "DB User name")
+	// flag.StringVar(&dbPass, "database-pass", "", "DB User's password")
 
 	flag.StringVar(&peer, "peer-name", "peer", "peer Collection name, default \"peer\"")
 	flag.StringVar(&bgpNode, "bgp-node-name", "bgp_node", "bgp node Collection name, default \"bgp_node\"")

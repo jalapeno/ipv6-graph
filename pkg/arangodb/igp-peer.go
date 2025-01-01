@@ -76,10 +76,10 @@ func (a *arangoDB) getExtPeer(ctx context.Context, e *message.PeerStateChange, l
 	// Need to find ls_node object matching ls_link's IGP Router ID
 	query := "FOR d IN " + a.bgpNode.Name()
 	if local {
-		glog.Infof("get local node per session: %s, %s", e.LocalBGPID, e.ID)
+		// glog.Infof("get local node per session: %s, %s", e.LocalBGPID, e.ID)
 		query += " filter d.router_id == " + "\"" + e.LocalBGPID + "\"" + " || d.bgp_router_id == " + "\"" + e.LocalBGPID + "\""
 	} else {
-		glog.Infof("get remote node per session: %s, %v", e.RemoteBGPID, e.ID)
+		// glog.Infof("get remote node per session: %s, %v", e.RemoteBGPID, e.ID)
 		query += " filter d.router_id == " + "\"" + e.RemoteBGPID + "\"" + " || d.bgp_router_id == " + "\"" + e.RemoteBGPID + "\""
 	}
 	query += " return d"
