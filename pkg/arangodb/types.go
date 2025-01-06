@@ -71,7 +71,7 @@ type bgpNode struct {
 	Key             string         `json:"_key,omitempty"`
 	ID              string         `json:"_id,omitempty"`
 	BGPRouterID     string         `json:"router_id,omitempty"`
-	ASN             int32          `json:"asn"`
+	ASN             uint32         `json:"asn"`
 	AdvCapabilities bgp.Capability `json:"adv_cap,omitempty"`
 	Name            string         `json:"name,omitempty"`
 	Tier            string         `json:"tier,omitempty"`
