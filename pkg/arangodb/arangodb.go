@@ -343,7 +343,7 @@ func (a *arangoDB) loadEdge() error {
 	// iBGP goes last as we sort out which prefixes are orginated externally
 	glog.Infof("copying ibgp unicast v6 prefixes into ibgp_prefix_v6 collection")
 	ibgp6_query := "for u in unicast_prefix_v6 FILTER u.prefix_len < 96 filter u.base_attrs.local_pref != null " +
-		"FILTER u.prefix_len < 30 FILTER u.base_attrs.as_path_count == null FOR p IN peer FILTER u.peer_ip == p.remote_ip " +
+		"FILTER u.prefix_len < 96 FILTER u.base_attrs.as_path_count == null FOR p IN peer FILTER u.peer_ip == p.remote_ip " +
 		"INSERT { _key: CONCAT_SEPARATOR(" + "\"_\", u.prefix, u.prefix_len), prefix: u.prefix, prefix_len: u.prefix_len, " +
 		"nexthop: u.nexthop, router_id: p.remote_bgp_id, asn: u.peer_asn, local_pref: u.base_attrs.local_pref } " +
 		"INTO ibgp_prefix_v6 OPTIONS { ignoreErrors: true } "
@@ -386,7 +386,6 @@ func (a *arangoDB) loadEdge() error {
 		}
 	}
 
-	//unicast_prefix_v6_query := "for p in unicast_prefix_v6 filter p.prefix_len < 96 return p"
 	bgp_prefix_query := "for p in ebgp_prefix_v6 return p"
 	cursor, err = a.db.Query(ctx, bgp_prefix_query, nil)
 	if err != nil {
@@ -401,7 +400,7 @@ func (a *arangoDB) loadEdge() error {
 		} else if err != nil {
 			return err
 		}
-		//glog.Infof("get ipv eBGP prefixes: %s", p.Key)
+		glog.Infof("get ipv6 eBGP prefixes: %s", p.Key)
 		if err := a.processeBgpPrefix(ctx, meta.Key, &p); err != nil {
 			glog.Errorf("failed to process key: %s with error: %+v", meta.Key, err)
 			continue
@@ -422,13 +421,14 @@ func (a *arangoDB) loadEdge() error {
 		} else if err != nil {
 			return err
 		}
-		//glog.Infof("get ipv inet prefixes: %s", p.Key)
+		//glog.Infof("get ipv6 inet prefixes: %s", p.Key)
 		if err := a.processInetPrefix(ctx, meta.Key, &p); err != nil {
 			glog.Errorf("failed to process key: %s with error: %+v", meta.Key, err)
 			continue
 		}
 	}
 
+	glog.Infof("get ipv6 ibgp prefixes")
 	ibgp_prefix_query := "for p in ibgp_prefix_v6 return p"
 	cursor, err = a.db.Query(ctx, ibgp_prefix_query, nil)
 	if err != nil {
@@ -438,12 +438,13 @@ func (a *arangoDB) loadEdge() error {
 	for {
 		var p ibgpPrefix
 		meta, err := cursor.ReadDocument(ctx, &p)
+		glog.Infof("get ipv6 ibgp prefix: %s", p.Key)
 		if driver.IsNoMoreDocuments(err) {
 			break
 		} else if err != nil {
 			return err
 		}
-		//glog.Infof("get ipv ibgp prefixes: %s", p.Key)
+		glog.Infof("get ipv6 ibgp prefixes: %s", p.Key)
 		if err := a.processIbgpPrefix(ctx, meta.Key, &p); err != nil {
 			glog.Errorf("failed to process key: %s with error: %+v", meta.Key, err)
 			continue

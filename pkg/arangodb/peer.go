@@ -12,7 +12,7 @@ import (
 
 // eBGP private
 func (a *arangoDB) processPeerSession(ctx context.Context, key string, p *message.PeerStateChange) error {
-	glog.Infof("process bgp session: %s", p.Key)
+	//glog.Infof("process bgp session: %s", p.Key)
 
 	if p.IsIPv4 == true {
 		return nil
