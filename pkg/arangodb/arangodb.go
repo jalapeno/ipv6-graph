@@ -17,14 +17,13 @@ import (
 type arangoDB struct {
 	dbclient.DB
 	*ArangoConn
-	stop    chan struct{}
-	graph   driver.Collection
-	peer    driver.Collection
-	bgpNode driver.Collection
-	//unicastprefixV6 driver.Collection
+	stop         chan struct{}
+	peer         driver.Collection
+	bgpNode      driver.Collection
 	ebgpprefixV6 driver.Collection
 	inetprefixV6 driver.Collection
 	ibgpprefixV6 driver.Collection
+	ipv6Edge     driver.Collection
 	ipv6Graph    driver.Graph
 	notifier     kafkanotifier.Event
 }
@@ -221,11 +220,11 @@ func NewDBSrvClient(arangoSrv, user, pass, dbname, peer, bgpNode, unicastprefixV
 	glog.Infof("getting graph edge collection")
 	if arango.ipv6Graph != nil {
 		// Get the edge collection from the graph
-		arango.graph, err = arango.db.Collection(context.TODO(), "ipv6_graph")
+		arango.ipv6Edge, err = arango.db.Collection(context.TODO(), "ipv6_graph")
 		if err != nil {
 			return nil, fmt.Errorf("failed to get graph edge collection: %v", err)
 		}
-		if arango.graph == nil {
+		if arango.ipv6Edge == nil {
 			return nil, fmt.Errorf("graph edge collection is nil")
 		}
 	} else {
